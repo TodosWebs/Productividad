@@ -149,15 +149,41 @@
     } catch { return taskIdeasRules(state); }
   }
 
-  async function generateSportWeek(state){
-    if ((state.settings || {}).aiMode === 'rules') return sportWeekRules(state);
+  async function generateSportWeek(state, userPrompt=''){
     const start = D().mondayOf();
-    const system = `Genera un planning semanal deportivo. Responde SOLO JSON válido con {"workouts":[{"date":"YYYY-MM-DD","time":"HH:MM","sport":"Gimnasio|Running|Bici|Pádel|Natación|Hyrox|Yoga/Pilates","title":"...","duration":45,"intensity":"Suave|Media|Alta","plan":"...","notes":"..."}]}. Semana empieza ${start}. Perfil:\n${profileSummary(state)}`;
+    const fallback = () => sportWeekRules(state).map(w => ({
+      ...w,
+      notes: userPrompt ? `Generado con reglas locales. Petición: ${userPrompt.slice(0,120)}` : w.notes
+    }));
+
+    if ((state.settings || {}).aiMode === 'rules') return fallback();
+
+    const system = `Eres un entrenador personal dentro de una app llamada Equilibrio. Genera un planning semanal deportivo personalizado.
+
+Responde SOLO JSON válido con esta forma exacta:
+{"workouts":[{"date":"YYYY-MM-DD","time":"HH:MM","sport":"Gimnasio|Running|Bici|Pádel|Natación|Hyrox|Yoga/Pilates","title":"...","duration":45,"intensity":"Suave|Media|Alta","plan":"...","notes":"..."}]}
+
+Reglas:
+- Semana empieza ${start}.
+- Respeta horarios, restricciones, cansancio, lesiones y preferencias indicadas por el usuario.
+- Si el usuario menciona días concretos, usa esas fechas o distribuye desde el lunes de la semana actual.
+- No pongas alta intensidad dos días seguidos salvo que el usuario lo pida.
+- Si hay pádel/Hyrox por la noche, el gym de ese día debe ser más suave o técnico.
+- Para gimnasio incluye ejercicios/series en el campo plan.
+- Para bici/running incluye zona, ritmo o intensidad en el campo plan.
+
+Perfil:
+${profileSummary(state)}`;
+
+    const prompt = userPrompt?.trim()
+      ? `Planifica mi semana con esta petición: ${userPrompt}`
+      : 'Crea un planning equilibrado para esta semana.';
+
     try {
-      const text = await callOllama(state, system, 'Crea un planning equilibrado para esta semana.');
+      const text = await callOllama(state, system, prompt);
       const parsed = safeJSON(text);
-      return (parsed.workouts || []).slice(0,10).map(x => ({id:D().uid('work'), done:false, ...x}));
-    } catch { return sportWeekRules(state); }
+      return (parsed.workouts || []).slice(0,14).map(x => ({id:D().uid('work'), done:false, ...x}));
+    } catch { return fallback(); }
   }
 
   window.EquilibrioAI = { generateText, generateTasks, generateSportWeek, mealIdeaRules, reflectionPromptRules, profileSummary };

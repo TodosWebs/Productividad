@@ -231,12 +231,22 @@
       </div>
       <div class="layout-2" style="margin-top:16px">
         <section class="card">
-          <div class="card-title"><div><h2>Plan deportivo</h2><p>Sesiones próximas y pasadas.</p></div><button class="primary-btn" onclick="App.generateSportWeek()">✨ Planning IA semanal</button></div>
+          <div class="card-title"><div><h2>Plan deportivo</h2><p>Sesiones próximas y pasadas.</p></div><button class="primary-btn" onclick="App.generateSportWeek()">✨ Planning rápido</button></div>
           <div class="timeline">${S.workouts.sort((a,b)=>String(a.date+a.time).localeCompare(String(b.date+b.time))).map(w=>workoutCard(w)).join('') || '<div class="empty">Aún no hay entrenamientos.</div>'}</div>
         </section>
-        <aside class="card">
-          <div class="card-title"><div><h2>Nuevo entrenamiento</h2><p>Registra una sesión manual.</p></div></div>
-          ${workoutFormHTML(Data.today())}
+        <aside>
+          <section class="card">
+            <div class="card-title"><div><h2>Planificador IA semanal</h2><p>Escribe cómo quieres entrenar y la IA te crea la semana.</p></div></div>
+            <div class="form">
+              <div class="field"><label>Cuéntale tu semana a la IA</label><textarea id="sportAiPrompt" placeholder="Ej: Esta semana quiero hacer 3 días de gym, 2 de bici suave, pádel el jueves por la noche y descansar el domingo. No quiero cargar mucho pierna antes del pádel."></textarea></div>
+              <button class="primary-btn full" onclick="App.generateSportWeekFromPrompt()">✨ Generar planificación</button>
+              <p class="hint">Para usar llama3, en Perfil e IA selecciona Proxy local Node + Ollama y abre el servidor local.</p>
+            </div>
+          </section>
+          <section class="card" style="margin-top:16px">
+            <div class="card-title"><div><h2>Nuevo entrenamiento</h2><p>Registra una sesión manual.</p></div></div>
+            ${workoutFormHTML(Data.today())}
+          </section>
         </aside>
       </div>`;
   }
@@ -484,6 +494,16 @@
     S.workouts.push(...workouts);
     saveQuiet(); render(); showToast(`${workouts.length} entrenamientos creados`);
   }
+
+  async function generateSportWeekFromPrompt(){
+    const prompt = ($('sportAiPrompt')?.value || '').trim();
+    if(!prompt){ showToast('Escribe primero qué entrenamientos quieres esta semana','error'); return; }
+    showToast('La IA está planificando tu semana...');
+    const workouts = await AI.generateSportWeek(S, prompt);
+    S.workouts.push(...workouts);
+    saveQuiet(); render(); showToast(`${workouts.length} entrenamientos creados desde tu texto`);
+  }
+
   async function generateMealIdea(){
     const box = $('mealIdea');
     if(box){ box.style.display='block'; box.textContent='Pensando...'; }
@@ -532,7 +552,7 @@
   window.App = { init, showView, openOnboarding, closeModal, toggleChoice, saveOnboarding, quickAdd,
     saveTask, saveWorkout, saveHabit, saveMeal, saveReflection, saveTransaction, saveAccount, saveAISettings, saveReminder,
     toggleDone, deleteItem, deleteFinance, toggleHabit, setSelectedDate, setTaskFilter, moveMonth, goToday, selectDate,
-    openTaskModal, openWorkoutModal, openEventModal, saveEvent, generateDailyPlan, generateTasks, generateSportWeek, generateMealIdea, generateReflectionPrompt,
+    openTaskModal, openWorkoutModal, openEventModal, saveEvent, generateDailyPlan, generateTasks, generateSportWeek, generateSportWeekFromPrompt, generateMealIdea, generateReflectionPrompt,
     editAccount, exportBackup, importBackup, resetAll, requestNotifications };
 
   document.addEventListener('DOMContentLoaded', init);
