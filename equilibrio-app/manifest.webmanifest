@@ -1,0 +1,12 @@
+{
+  "name": "Equilibrio",
+  "short_name": "Equilibrio",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#edf5ff",
+  "theme_color": "#edf5ff",
+  "description": "Organizador personal all-in-one: agenda, tareas, deporte, hábitos, comida, reflexión, economía e IA.",
+  "icons": [
+    { "src": "assets/icon.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
